@@ -1,11 +1,14 @@
-# flask-template
+# fastapi-template
 ## 说明
 - 标有 WIP 的表示暂不适用，后续解决 issue 后，会取消 WIP
 ## Project introduction
-使用 flask 框架开发后台服务的模版
+使用 Fastapi 框架开发后台服务的模版
 
 ## environment：
 - Python3.9
+
+## Run command
+ - uvicorn main:app --host 0.0.0.0 --port 8080
 
 ## How to start
 1. Fork repo: `git@git.yqslmall.com:sz-backend/flask-template.git`

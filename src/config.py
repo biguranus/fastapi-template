@@ -4,7 +4,7 @@ import os
 env = os.getenv
 
 ENVIRONMENT = env("ENVIRONMENT", "dev")
-DEBUG = env("DEBUG", "False").lower() == "true"
+DEBUG = env("DEBUG", "true").lower() == "true"
 
 # MySQL
 SQLALCHEMY_DATABASE_URI = env("SQLALCHEMY_DATABASE_URI", "sqlite://")
