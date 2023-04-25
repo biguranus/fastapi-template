@@ -1,19 +1,21 @@
 # -*- coding:utf-8 -*-
-from fastapi import FastAPI, APIRouter
+import uuid
+
+from fastapi import FastAPI, APIRouter, Request, Depends, Response
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.models import db
 from src.controllers import api, users
+from src.libs.logging import logger
+from src.libs.exceptions import APIException
 
 
 title = "FastAPI template Demo"
 description = "FastAPI project template"
 version = "0.0.1"
 terms_of_service = "https://gateway.gongxingtech.com/"
-contact = {
-    "name": "gongxingtech",
-    "url": "https://www.gongxingtech.com",
-    "email": ""
-}
+contact = {"name": "gongxingtech", "url": "https://www.gongxingtech.com", "email": ""}
 openapi_url = "/api/v1/openapi.json"
 tags_metadata = [
     {
@@ -36,6 +38,9 @@ tags_metadata = [
 
 
 def create_app():
+    """
+    创建 FastAPI 实例的工厂函数
+    """
     app = FastAPI(
         title=title,
         description=description,
@@ -53,6 +58,9 @@ def create_app():
         allow_headers=["*"],
     )
 
+    # db.Model.metadata.create_all(bind=db.get_engine())  # 自动创建表
+    # Depends(db)
+
     router = APIRouter(prefix="/api/v1")
 
     router.include_router(api.router)
@@ -62,5 +70,29 @@ def create_app():
     @app.get("/ping")
     async def ping():
         return "pong"
+
+    @app.middleware("http")
+    async def before_request(request: Request, call_next):
+        request_id = request.headers.get("request_id", str(uuid.uuid1()))
+        response = await call_next(request)
+        response.headers["request_id"] = request_id
+        logger.debug("before_request")
+        return response
+
+    @app.exception_handler(APIException)
+    async def handle_error(request: Request, e: APIException):
+        resp = {
+            "code": e.error_code,
+            "message": e.message,
+        }
+        return JSONResponse(status_code=e.http_code, content=resp)
+
+    @app.on_event("startup")
+    async def startup_event():
+        logger.debug("Starting up!")
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        logger.debug("Shutting down!")
 
     return app

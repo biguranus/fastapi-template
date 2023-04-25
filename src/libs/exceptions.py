@@ -1,8 +1,9 @@
 # -*- coding:utf-8 -*-
+from fastapi import status
 
 
 class APIException(Exception):
-    http_code = 400
+    http_code = status.HTTP_400_BAD_REQUEST
     error_code = 40000
     message = "APIException occured, bad request"
 
@@ -26,20 +27,44 @@ class APIException(Exception):
 
 
 class Unauthorized(APIException):
-    http_code = 401
+    http_code = status.HTTP_401_UNAUTHORIZED
 
 
 class Forbidden(APIException):
-    http_code = 403
+    http_code = status.HTTP_403_FORBIDDEN
 
 
 class NotFound(APIException):
-    http_code = 404
+    http_code = status.HTTP_404_NOT_FOUND
 
 
 class InternalError(APIException):
-    http_code = 500
+    http_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 class ServiceUnavailable(APIException):
-    http_code = 503
+    http_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+
+class UserEmailExisted(APIException):
+    error_code = 40001
+    message = "Email already registered"
+
+
+class UserInactive(APIException):
+    error_code = 40002
+    message = "Inactive user"
+
+
+class UserError(APIException):
+    error_code = 40003
+    message = "Incorrect username or password"
+
+
+class UserNotLogin(Unauthorized):
+    error_code = 40101
+
+
+class UserNotFound(NotFound):
+    error_code = 40401
+    message = "User not found"

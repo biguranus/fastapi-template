@@ -1,3 +1,11 @@
 fastapi==0.95.1
 uvicorn==0.21.1
 python-dotenv==1.0.0
+python-multipart==0.0.6
+python-jose==3.3.0
+passlib==1.7.4
+
+SQLAlchemy==2.0.10
+PyMySQL==1.0.3
+redis==4.5.4
+redislite==6.2.805324
