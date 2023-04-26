@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -38,3 +38,16 @@ class LoginUser(BaseModel):
 
 class LoginUserInDB(LoginUser):
     hashed_password: str
+
+
+class LoginUserResponse(BaseResponse):
+    data: LoginUser
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Union[str, None] = None

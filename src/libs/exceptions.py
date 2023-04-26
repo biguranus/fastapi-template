@@ -61,8 +61,9 @@ class UserError(APIException):
     message = "Incorrect username or password"
 
 
-class UserNotLogin(Unauthorized):
+class AuthTokenFailed(Unauthorized):
     error_code = 40101
+    message = "Could not validate credentials"
 
 
 class UserNotFound(NotFound):

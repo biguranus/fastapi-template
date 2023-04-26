@@ -1,34 +1,23 @@
 # -*- coding:utf-8 -*-
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from typing import Union, Dict, List
 
-from src.libs.utils import make_ok_resp
+from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import HTMLResponse
+
+from src.libs.auth import (
+    oauth2_scheme,
+    authenticate_user,
+    create_access_token,
+    get_current_active_user,
+    authenticate_token,
+)
+from src.libs.exceptions import NotFound, UserError
 from src.libs.logging import logger
-from src.libs.exceptions import NotFound, UserInactive, UserError, UserNotLogin
-from src.schemas.user import LoginUser, LoginUserInDB
-
-
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "fakehashedsecret",
-        "disabled": False,
-    },
-    "alice": {
-        "username": "alice",
-        "full_name": "Alice Wonderson",
-        "email": "alice@example.com",
-        "hashed_password": "fakehashedsecret2",
-        "disabled": True,
-    },
-}
-
+from src.libs.utils import make_ok_resp, ModelName
+from src.schemas.user import LoginUser, Token, LoginUserResponse
 
 router = APIRouter(tags=["test"])
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 
 
 @router.get("/", tags=["test"])
@@ -42,55 +31,117 @@ def test_exception():
     raise NotFound(message="test api not found")
 
 
-@router.get("/items")
+@router.get("/items", dependencies=[Depends(authenticate_token)])
 async def read_items(token: str = Depends(oauth2_scheme)):
     return {"token": token}
 
 
-def fake_hash_password(password: str):
-    return "fakehashed" + password
-
-
-def get_user(username: str):
-    if username in fake_users_db:
-        user_dict = fake_users_db[username]
-        return LoginUserInDB(**user_dict)
-
-
-def fake_decode_token(token):
-    return get_user(token)
-
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    login_user = fake_decode_token(token)
-    if not login_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return login_user
-
-
-async def get_current_active_user(current_user: LoginUser = Depends(get_current_user)):
-    if current_user.disabled:
-        raise UserInactive
-    return current_user
-
-
-@router.get("/me")
+@router.get("/me", response_model=LoginUserResponse)
 async def read_me(current_user: LoginUser = Depends(get_current_active_user)):
-    return current_user
+    return make_ok_resp(data=current_user)
 
 
-@router.post("/token")
+@router.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user_dict = fake_users_db.get(form_data.username)
-    if not user_dict:
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
         raise UserError
-    login_user = LoginUserInDB(**user_dict)
-    hashed_password = fake_hash_password(form_data.password)
-    if not hashed_password == login_user.hashed_password:
-        raise UserError
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
-    return {"access_token": login_user.username, "token_type": "bearer"}
+
+async def common_parameters(
+    q: Union[str, None] = None, skip: int = 0, limit: int = 100
+):
+    return {"q": q, "skip": skip, "limit": limit}
+
+
+fake_items_db = [{"item_name": "Foo"}, {"item_name": "Bar"}, {"item_name": "Baz"}]
+
+
+class CommonQueryParams:
+    def __init__(self, q: Union[str, None] = None, skip: int = 0, limit: int = 100):
+        self.q = q
+        self.skip = skip
+        self.limit = limit
+
+
+@router.get("/new/items")
+async def read_items(commons: CommonQueryParams = Depends()):
+    response = {}
+    if commons.q:
+        response.update({"q": commons.q})
+    items = fake_items_db[commons.skip : commons.skip + commons.limit]
+    response.update({"items": items})
+    return response
+
+
+@router.get("/new/users")
+async def read_users(commons: dict = Depends(common_parameters)):
+    return commons
+
+
+@router.get("/models/{model_name}")
+async def get_model(model_name: ModelName):
+    if model_name is ModelName.alexnet:
+        return {"model_name": model_name, "message": "Deep Learning FTW!"}
+
+    if model_name.value == "lenet":
+        return {"model_name": model_name, "message": "LeCNN all the images"}
+
+    return {"model_name": model_name, "message": "Have some residuals"}
+
+
+@router.get("/users/{user_id}/items/{item_id}")
+async def read_user_item(
+    user_id: int, item_id: str, q: Union[str, None] = None, short: bool = False
+):
+    item = {"item_id": item_id, "owner_id": user_id}
+    if q:
+        item.update({"q": q})
+    if not short:
+        item.update(
+            {"description": "This is an amazing item that has a long description"}
+        )
+    return item
+
+
+@router.post("/index-weights")
+async def create_index_weights(weights: Dict[int, float]):
+    return weights
+
+
+@router.post("/login")
+async def login(username: str = Form(), password: str = Form()):
+    return make_ok_resp(data={"username": username})
+
+
+# @router.post("/files")
+# async def create_file(file: bytes = File()):
+#     return {"file_size": len(file)}
+#
+#
+# @router.post("/uploadfile")
+# async def create_upload_file(file: UploadFile):
+#     return {"filename": file.filename}
+
+
+@router.post("/files", deprecated=True)
+async def create_files(files: List[bytes] = File()):
+    return {"file_sizes": [len(file) for file in files]}
+
+
+@router.post("/uploadfiles")
+async def create_upload_files(files: List[UploadFile]):
+    return {"filenames": [file.filename for file in files]}
+
+
+@router.post("/new/files")
+async def create_file(
+    file: bytes = File(), fileb: UploadFile = File(), token: str = Form()
+):
+    return {
+        "file_size": len(file),
+        "token": token,
+        "fileb_content_type": fileb.content_type,
+    }

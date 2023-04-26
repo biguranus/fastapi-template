@@ -1,15 +1,15 @@
 # -*- coding:utf-8 -*-
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from src.schemas.user import UserCreate, User, UserResponse
 from src.models.users import Users
 from src.schemas.response import BaseResponse
 from src.libs.utils import make_ok_resp
+from src.libs.auth import authenticate_token
 
 
 router = APIRouter(
-    prefix="/users",
-    tags=["users"],
+    prefix="/users", tags=["users"], dependencies=[Depends(authenticate_token)]
 )
 
 

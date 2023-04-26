@@ -1,6 +1,13 @@
 # -*- coding:utf-8 -*-
 import datetime as dt
 import uuid
+from enum import Enum
+
+
+class ModelName(Enum):
+    alexnet = "alexnet"
+    resnet = "resnet"
+    lenet = "lenet"
 
 
 def make_ok_resp(data=None, **kwargs):
