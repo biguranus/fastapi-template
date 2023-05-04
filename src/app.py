@@ -1,15 +1,13 @@
 # -*- coding:utf-8 -*-
 import uuid
 
-from fastapi import FastAPI, APIRouter, Request, Depends, Response
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from src.models import db
 from src.controllers import api, users
-from src.libs.logging import logger
 from src.libs.exceptions import APIException
-
+from src.libs.logging import logger
 
 title = "FastAPI template Demo"
 description = "FastAPI project template"
@@ -59,7 +57,6 @@ def create_app():
     )
 
     # db.Model.metadata.create_all(bind=db.get_engine())  # 自动创建表
-    # Depends(db)
 
     router = APIRouter(prefix="/api/v1")
 

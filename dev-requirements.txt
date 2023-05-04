@@ -14,3 +14,5 @@ redislite==6.2.805324
 
 oss2==2.17.0
 mq-http-sdk==1.0.3
+
+nacos-sdk-python==0.1.12
