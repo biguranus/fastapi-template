@@ -14,6 +14,7 @@ from src.config import (
     ALIYUN_OSS_PUBLIC_ENDPOINT,
     ALIYUN_OSS_BUCKET,
     ALIYUN_OSS_KEY_PREFIX,
+    USE_INTERNAL_ENDPOINT,
 )
 
 
@@ -32,7 +33,7 @@ def _get_bucket(endpoint=ALIYUN_OSS_ENDPOINT, bucket_name=ALIYUN_OSS_BUCKET):
 
 class OSSStore:
     def __init__(self, bucket, public_bucket, key_prefix=ALIYUN_OSS_KEY_PREFIX):
-        self.bucket = bucket
+        self.bucket = bucket if USE_INTERNAL_ENDPOINT else public_bucket
         self.public_bucket = public_bucket
         self.key_prefix = key_prefix
 
