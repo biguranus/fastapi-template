@@ -3,7 +3,7 @@ import os
 
 env = os.getenv
 
-ENVIRONMENT = env("ENVIRONMENT", "dev")
+ENVIRONMENT = env("ENVIRONMENT", "test")
 DEBUG = env("DEBUG", "true").lower() == "true"
 
 # MySQL
